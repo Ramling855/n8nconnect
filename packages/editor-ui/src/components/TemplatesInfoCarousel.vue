@@ -9,17 +9,28 @@
 			@after-change="updateCarouselScroll"
 		>
 			<Card v-for="n in loading ? 4 : 0" :key="`loading-${n}`" :loading="loading" />
-			<CollectionCard
+			<TemplatesInfoCard
 				v-for="collection in loading ? [] : collections"
+				data-test-id="templates-info-card"
 				:key="collection.id"
 				:collection="collection"
+				:showItemCount="showItemCount"
+				:width="cardsWidth"
 				@click="(e) => onCardClick(e, collection.id)"
 			/>
 		</agile>
-		<button v-show="carouselScrollPosition > 0" :class="$style.leftButton" @click="scrollLeft">
+		<button
+			v-show="showNavigation && carouselScrollPosition > 0"
+			:class="{ [$style.leftButton]: true }"
+			@click="scrollLeft"
+		>
 			<font-awesome-icon icon="chevron-left" />
 		</button>
-		<button v-show="!scrollEnd" :class="$style.rightButton" @click="scrollRight">
+		<button
+			v-show="showNavigation && !scrollEnd"
+			:class="{ [$style.rightButton]: true }"
+			@click="scrollRight"
+		>
 			<font-awesome-icon icon="chevron-right" />
 		</button>
 	</div>
@@ -30,7 +41,7 @@ import { defineComponent } from 'vue';
 import type { PropType } from 'vue';
 import type { ITemplatesCollection } from '@/Interface';
 import Card from '@/components/CollectionWorkflowCard.vue';
-import CollectionCard from '@/components/CollectionCard.vue';
+import TemplatesInfoCard from '@/components/TemplatesInfoCard.vue';
 import { VueAgile } from 'vue-agile';
 
 import { genericHelpers } from '@/mixins/genericHelpers';
@@ -38,7 +49,7 @@ import { genericHelpers } from '@/mixins/genericHelpers';
 type SliderRef = InstanceType<typeof VueAgile>;
 
 export default defineComponent({
-	name: 'CollectionsCarousel',
+	name: 'TemplatesInfoCarousel',
 	mixins: [genericHelpers],
 	props: {
 		collections: {
@@ -46,6 +57,18 @@ export default defineComponent({
 		},
 		loading: {
 			type: Boolean,
+		},
+		showItemCount: {
+			type: Boolean,
+			default: true,
+		},
+		showNavigation: {
+			type: Boolean,
+			default: true,
+		},
+		cardsWidth: {
+			type: String,
+			default: '240px',
 		},
 	},
 	watch: {
@@ -62,13 +85,14 @@ export default defineComponent({
 	},
 	components: {
 		Card,
-		CollectionCard,
+		TemplatesInfoCard,
 		agile: VueAgile,
 	},
 	data() {
 		return {
 			carouselScrollPosition: 0,
-			cardWidth: 240,
+			cardWidth: parseInt(this.cardsWidth, 10),
+			sliderWidth: 0,
 			scrollEnd: false,
 			listElement: null as null | Element,
 		};
@@ -175,6 +199,7 @@ export default defineComponent({
 .rightButton {
 	composes: button;
 	right: -30px;
+
 	&:after {
 		right: 27px;
 		background: linear-gradient(
@@ -203,10 +228,6 @@ export default defineComponent({
 		padding-bottom: var(--spacing-2xs);
 		overflow-x: auto;
 		transition: all 1s ease-in-out;
-	}
-
-	&__track {
-		width: 50px;
 	}
 }
 </style>

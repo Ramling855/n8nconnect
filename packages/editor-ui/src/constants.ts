@@ -56,6 +56,7 @@ export const SOURCE_CONTROL_PULL_MODAL_KEY = 'sourceControlPull';
 export const DEBUG_PAYWALL_MODAL_KEY = 'debugPaywall';
 export const MFA_SETUP_MODAL_KEY = 'mfaSetup';
 export const WORKFLOW_HISTORY_VERSION_RESTORE = 'workflowHistoryVersionRestore';
+export const SUGGESTED_TEMPLATES_PREVIEW_MODAL_KEY = 'suggestedTemplatePreview';
 
 export const EXTERNAL_SECRETS_PROVIDER_MODAL_KEY = 'externalSecretsProvider';
 
@@ -617,7 +618,9 @@ export const ASK_AI_EXPERIMENT = {
 	gpt4: 'gpt4',
 };
 
-export const EXPERIMENTS_TO_TRACK = [ASK_AI_EXPERIMENT.name];
+export const TEMPLATE_CREDENTIAL_SETUP_EXPERIMENT = '016_template_credential_setup';
+
+export const EXPERIMENTS_TO_TRACK = [ASK_AI_EXPERIMENT.name, TEMPLATE_CREDENTIAL_SETUP_EXPERIMENT];
 
 export const MFA_AUTHENTICATION_REQUIRED_ERROR_CODE = 998;
 
@@ -682,3 +685,5 @@ export const TIME = {
 	HOUR: 60 * 60 * 1000,
 	DAY: 24 * 60 * 60 * 1000,
 };
+
+export const SUGGESTED_TEMPLATES_FLAG = 'SHOW_N8N_SUGGESTED_TEMPLATES';

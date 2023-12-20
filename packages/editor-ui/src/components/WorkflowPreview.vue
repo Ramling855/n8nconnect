@@ -37,11 +37,15 @@ const props = withDefaults(
 		executionId?: string;
 		executionMode?: string;
 		loaderType?: 'image' | 'spinner';
+		canOpenNDV?: boolean;
+		hideNodeIssues?: boolean;
 	}>(),
 	{
 		loading: false,
 		mode: 'workflow',
 		loaderType: 'image',
+		canOpenNDV: true,
+		hideNodeIssues: false,
 	},
 );
 
@@ -82,6 +86,8 @@ const loadWorkflow = () => {
 			JSON.stringify({
 				command: 'openWorkflow',
 				workflow: props.workflow,
+				canOpenNDV: props.canOpenNDV,
+				hideNodeIssues: props.hideNodeIssues,
 			}),
 			'*',
 		);
@@ -104,6 +110,7 @@ const loadExecution = () => {
 				command: 'openExecution',
 				executionId: props.executionId,
 				executionMode: props.executionMode || '',
+				canOpenNDV: props.canOpenNDV,
 			}),
 			'*',
 		);

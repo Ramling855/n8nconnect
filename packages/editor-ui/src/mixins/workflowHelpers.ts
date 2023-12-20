@@ -47,8 +47,8 @@ import type {
 
 import { useMessage } from '@/composables/useMessage';
 import { useToast } from '@/composables/useToast';
+import { useNodeHelpers } from '@/composables/useNodeHelpers';
 import { genericHelpers } from '@/mixins/genericHelpers';
-import { nodeHelpers } from '@/mixins/nodeHelpers';
 
 import { get, isEqual } from 'lodash-es';
 
@@ -187,6 +187,7 @@ export function resolveParameter(
 			id: PLACEHOLDER_FILLED_AT_EXECUTION_TIME,
 			mode: 'test',
 			resumeUrl: PLACEHOLDER_FILLED_AT_EXECUTION_TIME,
+			resumeFormUrl: PLACEHOLDER_FILLED_AT_EXECUTION_TIME,
 		},
 		$vars: useEnvironmentsStore().variablesAsObject,
 
@@ -474,11 +475,13 @@ export function executeData(
 }
 
 export const workflowHelpers = defineComponent({
-	mixins: [nodeHelpers, genericHelpers],
+	mixins: [genericHelpers],
 	setup() {
+		const nodeHelpers = useNodeHelpers();
 		return {
 			...useToast(),
 			...useMessage(),
+			nodeHelpers,
 		};
 	},
 	computed: {
@@ -612,7 +615,9 @@ export const workflowHelpers = defineComponent({
 						typeUnknown: true,
 					};
 				} else {
-					nodeIssues = this.getNodeIssues(nodeType.description, node, workflow, ['execution']);
+					nodeIssues = useNodeHelpers().getNodeIssues(nodeType.description, node, workflow, [
+						'execution',
+					]);
 				}
 
 				if (nodeIssues !== null) {
@@ -714,7 +719,7 @@ export const workflowHelpers = defineComponent({
 					const saveCredentials: INodeCredentials = {};
 					for (const nodeCredentialTypeName of Object.keys(node.credentials)) {
 						if (
-							this.hasProxyAuth(node) ||
+							useNodeHelpers().hasProxyAuth(node) ||
 							Object.keys(node.parameters).includes('genericAuthType')
 						) {
 							saveCredentials[nodeCredentialTypeName] = node.credentials[nodeCredentialTypeName];
@@ -723,7 +728,7 @@ export const workflowHelpers = defineComponent({
 
 						const credentialTypeDescription = nodeType.credentials
 							// filter out credentials with same name in different node versions
-							.filter((c) => this.displayParameter(node.parameters, c, '', node))
+							.filter((c) => useNodeHelpers().displayParameter(node.parameters, c, '', node))
 							.find((c) => c.name === nodeCredentialTypeName);
 
 						if (credentialTypeDescription === undefined) {
@@ -731,7 +736,14 @@ export const workflowHelpers = defineComponent({
 							continue;
 						}
 
-						if (!this.displayParameter(node.parameters, credentialTypeDescription, '', node)) {
+						if (
+							!useNodeHelpers().displayParameter(
+								node.parameters,
+								credentialTypeDescription,
+								'',
+								node,
+							)
+						) {
 							// Credential should not be displayed so do also not save
 							continue;
 						}
@@ -783,12 +795,16 @@ export const workflowHelpers = defineComponent({
 		},
 
 		getWebhookUrl(webhookData: IWebhookDescription, node: INode, showUrlFor?: string): string {
-			if (webhookData.restartWebhook === true) {
-				return '$execution.resumeUrl';
+			const { isForm, restartWebhook } = webhookData;
+			if (restartWebhook === true) {
+				return isForm ? '$execution.resumeFormUrl' : '$execution.resumeUrl';
 			}
-			let baseUrl = this.rootStore.getWebhookUrl;
+
+			let baseUrl;
 			if (showUrlFor === 'test') {
-				baseUrl = this.rootStore.getWebhookTestUrl;
+				baseUrl = isForm ? this.rootStore.getFormTestUrl : this.rootStore.getWebhookTestUrl;
+			} else {
+				baseUrl = isForm ? this.rootStore.getFormUrl : this.rootStore.getWebhookUrl;
 			}
 
 			const workflowId = this.workflowsStore.workflowId;
@@ -1026,9 +1042,8 @@ export const workflowHelpers = defineComponent({
 				const workflowData = await this.workflowsStore.createNewWorkflow(workflowDataRequest);
 
 				this.workflowsStore.addWorkflow(workflowData);
-
 				if (
-					this.settingsStore.isEnterpriseFeatureEnabled(EnterpriseEditionFeature.Sharing) &&
+					useSettingsStore().isEnterpriseFeatureEnabled(EnterpriseEditionFeature.Sharing) &&
 					this.usersStore.currentUser
 				) {
 					this.workflowsEEStore.setWorkflowOwnedBy({

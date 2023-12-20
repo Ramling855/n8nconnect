@@ -15,6 +15,7 @@
 				'touch-active': isTouchActive,
 				'is-touch-device': isTouchDevice,
 				'menu-open': isContextMenuOpen,
+				'disable-pointer-events': disablePointerEvents,
 			}"
 		>
 			<div
@@ -36,7 +37,7 @@
 					v-if="!data.disabled"
 					:class="{ 'node-info-icon': true, 'shift-icon': shiftOutputCount }"
 				>
-					<div v-if="hasIssues" class="node-issues" data-test-id="node-issues">
+					<div v-if="hasIssues && !hideNodeIssues" class="node-issues" data-test-id="node-issues">
 						<n8n-tooltip :show-after="500" placement="bottom">
 							<template #content>
 								<titled-list :title="`${$locale.baseText('node.issues')}:`" :items="nodeIssues" />
@@ -157,10 +158,8 @@ import {
 	WAIT_TIME_UNLIMITED,
 } from '@/constants';
 import { nodeBase } from '@/mixins/nodeBase';
-import { nodeHelpers } from '@/mixins/nodeHelpers';
 import { workflowHelpers } from '@/mixins/workflowHelpers';
 import { pinData } from '@/mixins/pinData';
-
 import type {
 	ConnectionTypes,
 	IExecutionsSummary,
@@ -186,6 +185,7 @@ import { useNodeTypesStore } from '@/stores/nodeTypes.store';
 import { EnableNodeToggleCommand } from '@/models/history';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { type ContextMenuTarget, useContextMenu } from '@/composables/useContextMenu';
+import { useNodeHelpers } from '@/composables/useNodeHelpers';
 import { useExternalHooks } from '@/composables/useExternalHooks';
 
 export default defineComponent({
@@ -193,10 +193,11 @@ export default defineComponent({
 	setup() {
 		const contextMenu = useContextMenu();
 		const externalHooks = useExternalHooks();
+		const nodeHelpers = useNodeHelpers();
 
-		return { contextMenu, externalHooks };
+		return { contextMenu, externalHooks, nodeHelpers };
 	},
-	mixins: [nodeBase, nodeHelpers, workflowHelpers, pinData, debounceHelper],
+	mixins: [nodeBase, workflowHelpers, pinData, debounceHelper],
 	components: {
 		TitledList,
 		FontAwesomeIcon,
@@ -204,6 +205,14 @@ export default defineComponent({
 	},
 	props: {
 		isProductionExecutionPreview: {
+			type: Boolean,
+			default: false,
+		},
+		disablePointerEvents: {
+			type: Boolean,
+			default: false,
+		},
+		hideNodeIssues: {
 			type: Boolean,
 			default: false,
 		},
@@ -368,9 +377,10 @@ export default defineComponent({
 					styles['--configurable-node-input-count'] = nonMainInputs.length + spacerCount;
 				}
 
-				const outputs =
-					NodeHelpers.getNodeOutputs(this.workflow, this.node, this.nodeType) ||
-					([] as Array<ConnectionTypes | INodeOutputConfiguration>);
+				let outputs = [] as Array<ConnectionTypes | INodeOutputConfiguration>;
+				if (this.workflow.nodes[this.node.name]) {
+					outputs = NodeHelpers.getNodeOutputs(this.workflow, this.node, this.nodeType);
+				}
 
 				const outputTypes = NodeHelpers.getConnectionTypes(outputs);
 
@@ -482,7 +492,7 @@ export default defineComponent({
 			if (this.data.disabled) {
 				borderColor = '--color-foreground-base';
 			} else if (!this.isExecuting) {
-				if (this.hasIssues) {
+				if (this.hasIssues && !this.hideNodeIssues) {
 					// Do not set red border if there is an issue with the configuration node
 					if (
 						(this.nodeRunData?.[0]?.error as NodeOperationError)?.functionality !==
@@ -631,7 +641,8 @@ export default defineComponent({
 			// and ends up bogging down the UI with big workflows, for example when pasting a workflow or even opening a node...
 			// so we only update it when necessary (when node is mounted and when it's opened and closed (isActive))
 			try {
-				const nodeSubtitle = this.getNodeSubtitle(this.data, this.nodeType, this.workflow) || '';
+				const nodeSubtitle =
+					this.nodeHelpers.getNodeSubtitle(this.data, this.nodeType, this.workflow) || '';
 
 				this.nodeSubtitle = nodeSubtitle.includes(CUSTOM_API_CALL_KEY) ? '' : nodeSubtitle;
 			} catch (e) {
@@ -640,7 +651,7 @@ export default defineComponent({
 		},
 		disableNode() {
 			if (this.data !== null) {
-				this.disableNodes([this.data]);
+				this.nodeHelpers.disableNodes([this.data]);
 				this.historyStore.pushCommandToUndo(
 					new EnableNodeToggleCommand(
 						this.data.name,
@@ -758,6 +769,9 @@ export default defineComponent({
 		width: 100%;
 		height: 100%;
 		cursor: pointer;
+		&.disable-pointer-events {
+			pointer-events: none;
+		}
 
 		.node-box {
 			width: 100%;
