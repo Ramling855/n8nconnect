@@ -5,7 +5,7 @@
     "dev": "pnpm run storybook",
     "build": "pnpm type-check && pnpm build:vite && pnpm build:prepare",
     "build:vite": "vite build && npm run build:vite:full",
-    "build:vite:full": "INCLUDE_VUE=true vite build",
+    "build:vite:full": "cross-env INCLUDE_VUE=true vite build",
     "build:prepare": "node scripts/postbuild.js",
     "build:pack": "node scripts/pack.js",
     "preview": "vite preview",

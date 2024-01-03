@@ -14,9 +14,20 @@ export default defineComponent({
 		basePath(): string {
 			return this.rootStore.baseUrl;
 		},
-		logoPath(): string {
-			return this.basePath + this.uiStore.logo;
-		},
+		isDarkMode() {
+            return this.uiStore.appliedTheme === 'dark';
+         },
+
+		 
+      logoPath() {
+      const baseLogoPath = this.basePath;
+
+           return this.isDarkMode
+          ? baseLogoPath + 'logo-dark.svg'
+          : baseLogoPath + 'logo-light.svg';
+      
+    },
+
 	},
 });
 </script>

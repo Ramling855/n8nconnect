@@ -128,6 +128,9 @@ import MainSidebarSourceControl from '@/components/MainSidebarSourceControl.vue'
 import { hasPermission } from '@/rbac/permissions';
 import { useExternalHooks } from '@/composables/useExternalHooks';
 
+import { ref, watchEffect } from 'vue';
+
+
 export default defineComponent({
 	name: 'MainSidebar',
 	components: {
@@ -163,11 +166,25 @@ export default defineComponent({
 			useCloudPlanStore,
 			useSourceControlStore,
 		),
-		logoPath(): string {
-			if (this.isCollapsed) return this.basePath + 'n8n-logo-collapsed.svg';
+		
+		isDarkMode() {
+            return this.uiStore.appliedTheme === 'dark';
+         },
 
-			return this.basePath + this.uiStore.logo;
-		},
+	    logoPath() {
+      const baseLogoPath = this.basePath;
+
+      if (this.isCollapsed) {
+        return this.isDarkMode
+          ? baseLogoPath + 'logo-dark-collapsed.svg'
+          : baseLogoPath + 'logo-light-collapsed.svg';
+      } else {
+        return this.isDarkMode
+          ? baseLogoPath + 'logo-dark.svg'
+          : baseLogoPath + 'logo-light.svg';
+      }
+    },
+
 		hasVersionUpdates(): boolean {
 			return (
 				this.settingsStore.settings.releaseChannel === 'stable' &&
